@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+    <link rel="stylesheet" href="css/qgis2web.css">
+    <link rel="stylesheet" href="css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="css/MarkerCluster.css">
+    <link rel="stylesheet" href="css/MarkerCluster.Default.css">
+    <link rel="stylesheet" href="css/leaflet-search.css">
+    <link rel="stylesheet" href="css/filter.css">
+    <link rel="stylesheet" href="css/nouislider.min.css">
+    <link rel="stylesheet" href="css/leaflet-measure.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #be5252;
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            position: relative;
+            /* <-- ADDED THIS LINE */
+            background-color: #333;
+            color: rgb(255, 174, 0);
+            padding: 10px 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            text-transform: uppercase;
+        }
+
+        #logo {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 40px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            font-size: 1em;
+            color: #ccc;
+        }
+
+        #main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 350px;
+            background-color: #fff;
+            padding: 15px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        #sidebar h2,
+        #sidebar h3 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+            color: #333;
+        }
+
+        .control-section {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #map-container {
+            flex: 1;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Style adjustments for qgis2web elements moved to sidebar */
+        .leaflet-control-layers {
+            box-shadow: none;
+            border: none;
+            width: 100%;
+        }
+
+        .leaflet-control-layers-list {
+            max-height: 250px;
+            /* Adjust as needed */
+        }
+
+        .filterlabel {
+            margin-top: 10px;
+        }
+
+        footer#credit {
+            text-align: center;
+            padding: 8px 0;
+            background-color: #333;
+            color: #ccc;
+            font-size: 0.85em;
+        }
+    </style>
+    <title>Cholera Outbreak Risk Zone</title>
+</head>
+
+<body>
+    <div id="app-container">
+        <header>
+            <img id="logo" src="images/logo.png" alt="ICDDRB Logo">
+            <h1>Chakaria HDSS Cholera Outbreak Risk Zone</h1>
+            <p>Using Environmental and Climatic Variables in Chakaria</p>
+        </header>
+        <div id="main-content">
+            <aside id="sidebar">
+                <div id="legend-container" class="control-section">
+                    <h3>Map Layers & Legend</h3>
+                </div>
+                <div id="filter-container" class="control-section">
+                    <h3>Filter by Overall Risk</h3>
+                </div>
+                <div id="about-section" class="control-section">
+                    <h3>About This Map</h3>
+                    <p>This interactive map visualizes potential cholera outbreak risk zones. The risk levels are
+                        calculated based on an analysis of various environmental and climatic factors including:</p>
+                    <ul>
+                        <li>Flood</li>
+                        <li>Elevation</li>
+                        <li>Land Surface Temperature</li>
+                        <li>Rainfall</li>
+                        <li>Soil Salinity</li>
+                        <li>Waterbodies</li>
+                        <li>Water Turbidity</li>
+                    </ul>
+                    <p>Use the filter and layer controls to explore the data.</p>
+                </div>
+            </aside>
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+        <footer id="credit">
+            &copy; 2025 Al Jubaer, Senior Research Officer, CCHPS, HSPSD, ICDDR,B
+        </footer>
+    </div>
+
+    <script src="js/qgis2web_expressions.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="js/L.Control.Layers.Tree.min.js"></script>
+    <script src="js/leaflet.rotatedMarker.js"></script>
+    <script src="js/leaflet.pattern.js"></script>
+    <script src="js/leaflet-hash.js"></script>
+    <script src="js/Autolinker.min.js"></script>
+    <script src="js/rbush.min.js"></script>
+    <script src="js/labelgun.min.js"></script>
+    <script src="js/labels.js"></script>
+    <script src="js/leaflet-measure.js"></script>
+    <script src="js/leaflet.markercluster.js"></script>
+    <script src="js/leaflet-search.js"></script>
+    <script src="js/tailDT.js"></script>
+    <script src="js/nouislider.min.js"></script>
+    <script src="js/wNumb.js"></script>
+    <script src="data/Overall_Risk_1.js"></script>
+    <script src="data/Chakaria_Household_2.js"></script>
+    <script>
+        var map = L.map('map', {
+            zoomControl: false, maxZoom: 25, minZoom: 12
+        }).fitBounds([[21.72006808437961, 91.8991928294925], [21.895260798332068, 92.20444434717993]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({ truncate: { length: 30, location: 'smart' } });
+
+        function removeEmptyRowsFromPopupContent(content, feature) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var rows = tempDiv.querySelectorAll('tr');
+            for (var i = 0; i < rows.length; i++) {
+                var td = rows[i].querySelector('td.visible-with-data');
+                var key = td ? td.id : '';
+                if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                    rows[i].parentNode.removeChild(rows[i]);
+                }
+            }
+            return tempDiv.innerHTML;
+        }
+
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            if (tempDiv.querySelector('td img')) {
+                popup._contentNode.classList.add('media');
+                setTimeout(function () {
+                    popup.update();
+                }, 10);
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() { }
+
+        map.createPane('pane_OSMStandard_0');
+        map.getPane('pane_OSMStandard_0').style.zIndex = 400;
+        var layer_OSMStandard_0 = L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'pane_OSMStandard_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, CC-BY-SA</a>',
+            minZoom: 10,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OSMStandard_0;
+        map.addLayer(layer_OSMStandard_0);
+
+        function pop_Overall_Risk_1(feature, layer) {
+            var popupContent = '<table>\
+                                <tr>\
+                                    <td colspan="2"><strong>Village Name</strong><br />' + (feature.properties['VILLAGE_NA'] !== null ? autolinker.link(String(feature.properties['VILLAGE_NA'])) : '') + '</td>\
+                                </tr>\
+                                <tr>\
+                                    <td colspan="2"><strong>Flood Risk</strong><br />' + (feature.properties['flood_risk'] !== null ? autolinker.link(String(feature.properties['flood_risk'])) : '') + '</td>\
+                                </tr>\
+                                <tr>\
+                                    <td colspan="2"><strong>Elevation</strong><br />' + (feature.properties['ele_risk'] !== null ? autolinker.link(String(feature.properties['ele_risk'])) : '') + '</td>\
+                                </tr>\
+                                <tr>\
+                                    <td colspan="2"><strong>Land Surface Temperature</strong><br />' + (feature.properties['lst_risk'] !== null ? autolinker.link(String(feature.properties['lst_risk'])) : '') + '</td>\
+                                </tr>\
+                                <tr>\
+                                    <td colspan="2"><strong>Rainfall</strong><br />' + (feature.properties['rain_risk'] !== null ? autolinker.link(String(feature.properties['rain_risk'])) : '') + '</td>\
+                                </tr>\
+                                <tr>\
+                                    <td class="visible-with-data" id="slo_risk" colspan="2"><strong>Soil Salinity</strong><br />' + (feature.properties['slo_risk'] !== null ? autolinker.link(String(feature.properties['slo_risk'])) : '') + '</td>\
+                                </tr>\
+                                <tr>\
+                                    <td colspan="2"><strong>Waterbody</strong><br />' + (feature.properties['waterbodyr'] !== null ? autolinker.link(String(feature.properties['waterbodyr'])) : '') + '</td>\
+                                </tr>\
+                                <tr>\
+                                    <td colspan="2"><strong>Overall Risk Score</strong><br />' + (feature.properties['overallris'] !== null ? autolinker.link(String(feature.properties['overallris'])) : '') + '</td>\
+                                </tr>\
+                            </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+            layer.on('popupopen', function (e) { addClassToPopupIfMedia(content, e.popup); });
+            layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Overall_Risk_1_0(feature) {
+            if (feature.properties['overallris'] >= 35.000000 && feature.properties['overallris'] <= 51.000000) {
+                return { pane: 'pane_Overall_Risk_1', opacity: 1, color: 'rgba(35,35,35,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1.0, fill: true, fillOpacity: 1, fillColor: 'rgba(0,191,0,1.0)', interactive: true, }
+            }
+            if (feature.properties['overallris'] >= 51.000000 && feature.properties['overallris'] <= 58.000000) {
+                return { pane: 'pane_Overall_Risk_1', opacity: 1, color: 'rgba(35,35,35,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1.0, fill: true, fillOpacity: 1, fillColor: 'rgba(90,255,198,1.0)', interactive: true, }
+            }
+            if (feature.properties['overallris'] >= 58.000000 && feature.properties['overallris'] <= 63.000000) {
+                return { pane: 'pane_Overall_Risk_1', opacity: 1, color: 'rgba(35,35,35,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1.0, fill: true, fillOpacity: 1, fillColor: 'rgba(255,171,13,1.0)', interactive: true, }
+            }
+            if (feature.properties['overallris'] >= 63.000000 && feature.properties['overallris'] <= 70.000000) {
+                return { pane: 'pane_Overall_Risk_1', opacity: 1, color: 'rgba(35,35,35,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1.0, fill: true, fillOpacity: 1, fillColor: 'rgba(255,104,86,1.0)', interactive: true, }
+            }
+            if (feature.properties['overallris'] >= 70.000000 && feature.properties['overallris'] <= 93.000000) {
+                return { pane: 'pane_Overall_Risk_1', opacity: 1, color: 'rgba(35,35,35,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1.0, fill: true, fillOpacity: 1, fillColor: 'rgba(215,25,28,1.0)', interactive: true, }
+            }
+        }
+        map.createPane('pane_Overall_Risk_1');
+        map.getPane('pane_Overall_Risk_1').style.zIndex = 401;
+        map.getPane('pane_Overall_Risk_1').style['mix-blend-mode'] = 'normal';
+        var layer_Overall_Risk_1 = new L.geoJson(json_Overall_Risk_1, {
+            attribution: '', interactive: true, dataVar: 'json_Overall_Risk_1', layerName: 'layer_Overall_Risk_1', pane: 'pane_Overall_Risk_1', onEachFeature: pop_Overall_Risk_1, style: style_Overall_Risk_1_0,
+        });
+        bounds_group.addLayer(layer_Overall_Risk_1);
+        map.addLayer(layer_Overall_Risk_1);
+
+        function pop_Chakaria_Household_2(feature, layer) {
+            var popupContent = '<table>\
+                                <tr><td colspan="2"><strong>chid</strong><br />' + (feature.properties['chid'] !== null ? autolinker.link(String(feature.properties['chid'])) : '') + '</td></tr>\
+                                <tr><td colspan="2"><strong>Land_Cover</strong><br />' + (feature.properties['Land_Cover'] !== null ? autolinker.link(String(feature.properties['Land_Cover'])) : '') + '</td></tr>\
+                                <tr><td colspan="2"><strong>NDVI</strong><br />' + (feature.properties['NDVI'] !== null ? autolinker.link(String(feature.properties['NDVI'])) : '') + '</td></tr>\
+                                <tr><td colspan="2"><strong>UID</strong><br />' + (feature.properties['UID'] !== null ? autolinker.link(String(feature.properties['UID'])) : '') + '</td></tr>\
+                            </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+            layer.on('popupopen', function (e) { addClassToPopupIfMedia(content, e.popup); });
+            layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Chakaria_Household_2_0() {
+            return {
+                pane: 'pane_Chakaria_Household_2', radius: 4.0, opacity: 1, color: 'rgba(35,35,35,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1, fill: true, fillOpacity: 1, fillColor: 'rgba(190,207,80,1.0)', interactive: true,
+            }
+        }
+        map.createPane('pane_Chakaria_Household_2');
+        map.getPane('pane_Chakaria_Household_2').style.zIndex = 402;
+        var layer_Chakaria_Household_2 = new L.geoJson(json_Chakaria_Household_2, {
+            attribution: '', interactive: true, dataVar: 'json_Chakaria_Household_2', layerName: 'layer_Chakaria_Household_2', pane: 'pane_Chakaria_Household_2', onEachFeature: pop_Chakaria_Household_2,
+            pointToLayer: function (feature, latlng) {
+                return L.circleMarker(latlng, style_Chakaria_Household_2_0(feature));
+            },
+        });
+        var cluster_Chakaria_Household_2 = new L.MarkerClusterGroup({ showCoverageOnHover: false, spiderfyDistanceMultiplier: 2 });
+        cluster_Chakaria_Household_2.addLayer(layer_Chakaria_Household_2);
+        bounds_group.addLayer(layer_Chakaria_Household_2);
+        cluster_Chakaria_Household_2.addTo(map);
+
+        var overlaysTree = [
+            { label: '<img src="legend/Chakaria_Household_2.png" /> Chakaria_Household', layer: cluster_Chakaria_Household_2 },
+            { label: 'Overall_Risk<br /><table><tr><td style="text-align: center;"><img src="legend/Overall_Risk_1_VeryLowRisk0.png" /></td><td>Very Low Risk (35-51)</td></tr><tr><td style="text-align: center;"><img src="legend/Overall_Risk_1_LowRisk1.png" /></td><td>Low Risk (51-58)</td></tr><tr><td style="text-align: center;"><img src="legend/Overall_Risk_1_MediumRisk2.png" /></td><td>Medium Risk (58-63)</td></tr><tr><td style="text-align: center;"><img src="legend/Overall_Risk_1_HighRisk3.png" /></td><td>High Risk (63-70)</td></tr><tr><td style="text-align: center;"><img src="legend/Overall_Risk_1_VeryHighRisk4.png" /></td><td>Very High Risk (70-93)</td></tr></table>', layer: layer_Overall_Risk_1 },
+            { label: "OSM Standard", layer: layer_OSMStandard_0 },]
+
+        var lay = L.control.layers.tree(null, overlaysTree, {
+            collapsed: false,
+        });
+        lay.addTo(map);
+
+        // MODIFICATION: Move layer control to sidebar
+        var layerControlElement = document.querySelector('.leaflet-control-layers');
+        document.getElementById('legend-container').appendChild(layerControlElement);
+        layerControlElement.style.display = 'block'; // Ensure it's visible
+        // Remove original toggle functionality that may interfere
+        var toggle = document.querySelector('.leaflet-control-layers-toggle');
+        if (toggle) {
+            toggle.style.display = 'none';
+        }
+
+        setBounds();
+        var i = 0;
+        layer_Overall_Risk_1.eachLayer(function (layer) {
+            var context = { feature: layer.feature, variables: {} };
+            layer.bindTooltip((layer.feature.properties['VILLAGE_NA'] !== null ? String('<div style="text-align: center; color: #323232; font-family: \'Open Sans\', sans-serif; font-size: 9pt; font-weight: bold; text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF;">' + layer.feature.properties['VILLAGE_NA'] + '</div>') : ''), { permanent: true, offset: [-0, -16], className: 'css_Overall_Risk_1' });
+            labels.push(layer);
+            totalMarkers += 1;
+            layer.added = true;
+            addLabel(layer, i);
+            i++;
+        });
+
+        map.addControl(new L.Control.Search({
+            layer: layer_Overall_Risk_1, // Search on the main layer, not a cluster
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'VILLAGE_NA'
+        }));
+        document.getElementsByClassName('search-button')[0].className += ' fa fa-binoculars';
+
+        // --- FILTER LOGIC ---
+        var Filters = { "overallris": "int" };
+        function filterFunc() {
+            map.eachLayer(function (lyr) {
+                if ("options" in lyr && "dataVar" in lyr["options"]) {
+                    features = this[lyr["options"]["dataVar"]].features.slice(0);
+                    try {
+                        for (key in Filters) {
+                            if (Filters[key] == "int") {
+                                sliderVals = document.getElementById("div_overallris").noUiSlider.get();
+                                try {
+                                    if (key in features[0].properties) {
+                                        for (i = features.length - 1; i >= 0; --i) {
+                                            if (parseInt(features[i].properties[key]) < sliderVals[0] || parseInt(features[i].properties[key]) > sliderVals[1]) {
+                                                features.splice(i, 1);
+                                            }
+                                        }
+                                    }
+                                } catch (err) { }
+                            }
+                        }
+                    } catch (err) { }
+                    this[lyr["options"]["layerName"]].clearLayers();
+                    this[lyr["options"]["layerName"]].addData(features);
+                    var i = 0;
+                    layer_Overall_Risk_1.eachLayer(function (layer) {
+                        var context = { feature: layer.feature, variables: {} };
+                        layer.bindTooltip((layer.feature.properties['VILLAGE_NA'] !== null ? String('<div style="color: #323232; font-size: 7pt; font-family: \'Open Sans\', sans-serif;">' + layer.feature.properties['VILLAGE_NA']) + '</div>' : ''), { permanent: true, offset: [-0, -16], className: 'css_Overall_Risk_1' });
+                        labels.push(layer);
+                        totalMarkers += 1;
+                        layer.added = true;
+                        addLabel(layer, i);
+                        i++;
+                    });
+                }
+            })
+        }
+
+        // --- FILTER ELEMENT CREATION AND PLACEMENT ---
+        // MODIFICATION: Place filter elements in the sidebar's filter-container
+        var filterContainer = document.getElementById("filter-container");
+
+        var div_overallris = document.createElement("div");
+        div_overallris.id = "div_overallris";
+        div_overallris.className = "slider";
+        filterContainer.appendChild(div_overallris);
+
+        var lab_overallris = document.createElement('div');
+        lab_overallris.innerHTML = 'Value Range: <span id="val_overallris"></span>';
+        lab_overallris.className = 'filterlabel';
+        filterContainer.appendChild(lab_overallris);
+
+        var reset_overallris = document.createElement('div');
+        reset_overallris.innerHTML = 'clear filter';
+        reset_overallris.className = 'filterlabel';
+        reset_overallris.style.cursor = 'pointer';
+        reset_overallris.style.textDecoration = 'underline';
+        reset_overallris.onclick = function () {
+            sel_overallris.noUiSlider.reset();
+        };
+        filterContainer.appendChild(reset_overallris);
+
+        var sel_overallris = document.getElementById('div_overallris');
+        noUiSlider.create(sel_overallris, {
+            connect: true,
+            start: [35, 93],
+            step: 1,
+            format: wNumb({ decimals: 0 }),
+            range: { min: 35, max: 93 }
+        });
+
+        sel_overallris.noUiSlider.on('update', function (values) {
+            document.getElementById('val_overallris').innerHTML = values.join(' - ');
+            filterFunc();
+        });
+
+        resetLabels([layer_Overall_Risk_1]);
+        map.on("zoomend", function () { resetLabels([layer_Overall_Risk_1]); });
+        map.on("layeradd", function () { resetLabels([layer_Overall_Risk_1]); });
+        map.on("layerremove", function () { resetLabels([layer_Overall_Risk_1]); });
+    </script>
+
+</body>
+
+</html>
